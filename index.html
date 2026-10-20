@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Potwari Bol</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Potwari Bol">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#0B7A75">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Hanken+Grotesk:wght@400;500;600&family=Noto+Nastaliq+Urdu:wght@400;600&display=swap">
+<style>
+:root {
+  --bg: #F2F5F3; --surface: #FFFFFF; --ink: #12262A; --muted: #566A6D; --line: #D3DDDA;
+  --accent: #0B7A75; --accent-ink: #FFFFFF; --chip-bg: #FBE7B0; --chip-ink: #5A3F00; --danger: #A63A2B;
+  --font-display: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-script: "Noto Nastaliq Urdu", "Geeza Pro", "Noto Naskh Arabic", "Segoe UI", serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0E1A1C; --surface: #15262A; --ink: #E6EFEE; --muted: #93A9AB; --line: #284044;
+    --accent: #3CC2B8; --accent-ink: #06201E; --chip-bg: #4A3A10; --chip-ink: #F6D98A; --danger: #F08C7C;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--font-body);
+  padding-top: max(28px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(56px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+header { display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { margin: 0; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+h1 { margin: 0; font: 700 clamp(2.2rem, 9vw, 3.1rem)/1.05 var(--font-display); letter-spacing: -.02em; }
+.lede { margin: 4px 0 0; color: var(--muted); max-width: 46ch; }
+h2 { margin: 0 0 10px; font: 600 12px/1.2 var(--font-body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.chip { align-self: flex-start; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; background: var(--chip-bg); color: var(--chip-ink); border-radius: 999px; padding: 4px 10px; }
+.en { margin: 0; color: var(--muted); font-size: 15px; overflow-wrap: anywhere; }
+.script { margin: 0; font: 400 clamp(1.7rem, 7vw, 2.3rem)/2.2 var(--font-script); text-align: right; overflow-wrap: anywhere; }
+.latin { margin: 0; font: 500 clamp(1.3rem, 5.2vw, 1.7rem)/1.25 var(--font-display); letter-spacing: -.01em; overflow-wrap: anywhere; }
+.facts { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 14px; font-size: 14px; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; overflow-wrap: anywhere; font-weight: 500; letter-spacing: .02em; }
+.note { margin: 0; font-size: 14px; color: var(--muted); }
+.play-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 4px; }
+.play { width: 56px; height: 56px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-ink); display: inline-grid; place-items: center; cursor: pointer; flex: none; }
+.play:disabled { opacity: .5; cursor: not-allowed; }
+.play svg { width: 22px; height: 22px; fill: currentColor; margin-left: 3px; }
+.play.on { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 30%, transparent); }
+.hint { font-size: 14px; color: var(--muted); min-width: 0; }
+.btn { font: 600 15px/1 var(--font-body); min-height: 44px; padding: 0 20px; border-radius: 10px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn.small { min-height: 40px; padding: 0 14px; font-size: 14px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.tools { display: flex; flex-direction: column; gap: 12px; padding-top: 14px; border-top: 1px solid var(--line); }
+.tool-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.tool-line label { font-size: 13px; color: var(--muted); }
+select, input[type="text"] { font: 400 16px/1.3 var(--font-body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; min-height: 44px; padding: 0 12px; min-width: 0; max-width: 100%; width: 100%; }
+select { width: auto; font-size: 14px; min-height: 40px; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 13px; color: var(--muted); }
+.field input.rtl { text-align: right; font-family: var(--font-script); font-size: 18px; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.state { font-size: 14px; color: var(--muted); min-width: 0; }
+.state.err { color: var(--danger); }
+
+ul.rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow: hidden; }
+ul.rows li { display: flex; align-items: stretch; }
+ul.rows li + li { border-top: 1px solid var(--line); }
+.row-load { flex: 1; min-width: 0; text-align: left; background: transparent; color: var(--ink); border: 0; padding: 12px 14px; cursor: pointer; font: inherit; display: flex; flex-direction: column; gap: 2px; }
+.row-load .l { font: 500 16px/1.3 var(--font-display); overflow-wrap: anywhere; }
+.row-load .e { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.row-btn { flex: none; width: 52px; border: 0; border-left: 1px solid var(--line); background: transparent; color: var(--accent); cursor: pointer; display: grid; place-items: center; font: 600 13px var(--font-body); }
+.row-btn.del { color: var(--danger); }
+.row-btn:disabled { opacity: .4; cursor: not-allowed; }
+.row-btn svg { width: 18px; height: 18px; fill: currentColor; margin-left: 2px; }
+.empty { margin: 0; padding: 14px; font-size: 14px; color: var(--muted); }
+.foot { margin: 0; font-size: 13px; color: var(--muted); max-width: 60ch; }
+.opts { display: flex; flex-wrap: wrap; gap: 14px 24px; }
+fieldset { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+legend { padding: 0; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg button { font: 500 14px/1 var(--font-body); background: transparent; color: var(--ink); border: 0; padding: 11px 14px; min-height: 40px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+textarea { width: 100%; resize: vertical; min-height: 92px; font: 400 18px/1.45 var(--font-body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+textarea::placeholder, input::placeholder { color: var(--muted); }
+.pronbig { margin: 0; font: 600 clamp(1.05rem, 4.4vw, 1.3rem)/1.4 var(--font-body); letter-spacing: .04em; color: var(--accent); overflow-wrap: anywhere; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+details { font-size: 14px; color: var(--muted); }
+details summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; }
+details .field { margin-top: 8px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Pothohar · Rawalpindi, Jhelum, Mirpur</p>
+    <h1>Potwari Bol</h1>
+    <p class="lede">Type a sentence in English. See it in Potwari with how to say it, then press play to hear it.</p>
+  </header>
+
+  <section class="panel" aria-label="Translate">
+    <div class="opts">
+      <fieldset>
+        <legend>I am</legend>
+        <div class="seg" data-group="gender">
+          <button type="button" data-val="f" aria-pressed="true">A woman</button>
+          <button type="button" data-val="m" aria-pressed="false">A man</button>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>I am speaking to</legend>
+        <div class="seg" data-group="reg">
+          <button type="button" data-val="respect" aria-pressed="true">An elder or stranger</button>
+          <button type="button" data-val="close" aria-pressed="false">Someone close</button>
+        </div>
+      </fieldset>
+    </div>
+    <label for="src" class="sr">English sentence</label>
+    <textarea id="src" maxlength="300" rows="3" placeholder="Type English here, for example: I am learning Potwari so I can talk to you more"></textarea>
+    <div class="actions">
+      <button type="button" class="btn" id="go">Translate</button>
+      <button type="button" class="btn ghost" id="stop" hidden>Stop</button>
+      <span class="state" id="state" role="status" aria-live="polite"></span>
+    </div>
+    <details id="setup">
+      <summary>Translator setup</summary>
+      <div class="field">
+        <label for="apiUrl">Translator address</label>
+        <input type="text" id="apiUrl" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="https://potwari-translator.yourname.workers.dev">
+        <div class="actions"><button type="button" class="btn ghost small" id="apiSave">Save address</button><span class="state" id="apiState"></span></div>
+      </div>
+    </details>
+  </section>
+
+  <section class="card" id="result" aria-label="Phrase">
+    <span class="chip" id="tag"></span>
+    <p class="en" id="rEn"></p>
+    <p class="latin" id="rLatin"></p>
+    <p class="pronbig" id="rPronBig" hidden></p>
+    <p class="script" id="rScript" lang="ur" dir="rtl" hidden></p>
+    <dl class="facts" id="facts">
+      <dt id="dtLit">Word by word</dt><dd id="rLit"></dd>
+    </dl>
+    <p class="note" id="rNote" hidden></p>
+    <div class="play-row">
+      <button type="button" class="play" id="play" aria-label="Play">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5v17a1 1 0 0 0 1.5.86l14-8.5a1 1 0 0 0 0-1.72l-14-8.5A1 1 0 0 0 6 3.5z"/></svg>
+      </button>
+      <button type="button" class="btn ghost" id="slow">Play slowly</button>
+      <span class="hint" id="playLabel">Robot voice</span>
+    </div>
+    <div class="tools">
+      <div class="tool-line" id="voiceLine">
+        <label for="voiceSel">Robot voice</label>
+        <select id="voiceSel"></select>
+      </div>
+      <div class="tool-line" id="recLine">
+        <button type="button" class="btn ghost small" id="recAdd">Add a native recording</button>
+        <button type="button" class="btn ghost small" id="recDel" hidden>Remove recording</button>
+        <input type="file" id="recFile" accept="audio/*" hidden>
+        <span class="hint" id="recState"></span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Add a phrase</h2>
+    <form class="panel" id="addForm" autocomplete="off">
+      <div class="field"><label for="fEn">English</label><input type="text" id="fEn" maxlength="200" placeholder="How are you?"></div>
+      <div class="field"><label for="fLatin">Potwari in Roman letters</label><input type="text" id="fLatin" maxlength="300" placeholder="Tusi kiven o?"></div>
+      <div class="field"><label for="fScript">Urdu script (optional, helps the voice)</label><input type="text" id="fScript" class="rtl" dir="rtl" maxlength="300"></div>
+      <div class="field"><label for="fGur">Punjabi script (optional)</label><input type="text" id="fGur" maxlength="300"></div>
+      <div class="field"><label for="fPron">How to say it (optional)</label><input type="text" id="fPron" maxlength="300" placeholder="too-SEE KIH-ven OH"></div>
+      <div class="actions">
+        <button type="submit" class="btn">Save phrase</button>
+        <span class="state" id="formState" role="status" aria-live="polite"></span>
+      </div>
+    </form>
+  </section>
+
+  <section id="mineSec">
+    <h2>My phrases</h2>
+    <ul class="rows" id="mineList"></ul>
+  </section>
+
+  <section>
+    <h2>Starter phrases</h2>
+    <ul class="rows" id="starters"></ul>
+  </section>
+
+  <p class="foot" id="voiceNote"></p>
+  <p class="foot">Translations are made by AI and can be wrong. Potwari is less documented than Urdu or Punjabi and changes from town to town, so check important phrases with a native speaker.</p>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var PLAY_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5v17a1 1 0 0 0 1.5.86l14-8.5a1 1 0 0 0 0-1.72l-14-8.5A1 1 0 0 0 6 3.5z"/></svg>';
+
+  var STARTERS = [
+    {
+      en: "I am learning Potwari so that I can talk to you more.",
+      latin: "Mai sikhdi pai aan, taan jo tuhade naal hor gallan kar sakaan.",
+      script: "میں سِکھدی پئی آں، تاں جو تُہاڈے نال ہور گلاں کر سکاں",
+      gurmukhi: "ਮੈਂ ਸਿੱਖਦੀ ਪਈ ਆਂ, ਤਾਂ ਜੋ ਤੁਹਾਡੇ ਨਾਲ ਹੋਰ ਗੱਲਾਂ ਕਰ ਸਕਾਂ",
+      devanagari: "मैं सिखदी पई आं, ताँ जो तुहाडे नाल होर गल्लाँ कर सकाँ",
+      pron: "MY SIKH-dee PY AAN, TAAN JO too-HAA-deh NAAL HOR GAL-lan KAR sa-KAAN",
+      literal: "I learning am, so that your (respectful) with more talks do can",
+      note: "Spoken by a woman to an elder, with the respectful you."
+    },
+    {
+      en: "I am learning so that I can talk to you more.",
+      latin: "Mai sikhdi pai aan, taan jo tere naal hor gallan kar sakaan.",
+      script: "میں سِکھدی پئی آں، تاں جو تیرے نال ہور گلاں کر سکاں",
+      gurmukhi: "ਮੈਂ ਸਿੱਖਦੀ ਪਈ ਆਂ, ਤਾਂ ਜੋ ਤੇਰੇ ਨਾਲ ਹੋਰ ਗੱਲਾਂ ਕਰ ਸਕਾਂ",
+      devanagari: "मैं सिखदी पई आं, ताँ जो तेरे नाल होर गल्लाँ कर सकाँ",
+      pron: "MY SIKH-dee PY AAN, TAAN JO TEH-reh NAAL HOR GAL-lan KAR sa-KAAN",
+      literal: "I learning am, so that your with more talks do can",
+      note: "Spoken by a woman to someone close."
+    },
+    {
+      en: "I missed you.",
+      latin: "Mainu teri bohat yaad aayi.",
+      script: "مینوں تیری بہت یاد آئی",
+      gurmukhi: "ਮੈਨੂੰ ਤੇਰੀ ਬਹੁਤ ਯਾਦ ਆਈ",
+      devanagari: "मैनूं तेरी बहुत याद आई",
+      pron: "MAY-noo TEH-ree BOH-hat YAAD AA-yee",
+      literal: "to-me your much memory came",
+      note: "Said by anyone, to someone close."
+    }
+  ];
+
+  var SAVE_KEY = "potwari-bol-mine", VOICE_KEY = "potwari-bol-voice";
+  var state = { gender: "f", reg: "respect", busy: false, ctl: null, current: null, mine: [], canSpeak: false, voices: [], voiceChoice: "auto", hasRec: false, recOk: true };
+  var audioCtx = null, currentSrc = null, currentAudio = null;
+
+  function validPhrase(p) { return p && typeof p.en === "string" && typeof p.latin === "string"; }
+  function loadMine() {
+    try { var raw = localStorage.getItem(SAVE_KEY); var a = raw ? JSON.parse(raw) : []; return Array.isArray(a) ? a.filter(validPhrase) : []; }
+    catch (e) { return []; }
+  }
+  function saveMine() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(state.mine)); } catch (e) {} }
+
+  /* recordings, kept on this phone */
+  var STORE = "rec";
+  function openDb() {
+    return new Promise(function (res, rej) {
+      try {
+        var r = indexedDB.open("potwari-bol", 1);
+        r.onupgradeneeded = function () { r.result.createObjectStore(STORE); };
+        r.onsuccess = function () { res(r.result); };
+        r.onerror = function () { rej(r.error); };
+      } catch (e) { rej(e); }
+    });
+  }
+  function recOp(mode, fn) {
+    return openDb().then(function (db) {
+      return new Promise(function (res, rej) {
+        var req = fn(db.transaction(STORE, mode).objectStore(STORE));
+        req.onsuccess = function () { res(req.result || null); };
+        req.onerror = function () { rej(req.error); };
+      });
+    });
+  }
+  function keyOf(p) { return p.en + "|" + p.latin; }
+  function recGet(p) { return recOp("readonly", function (s) { return s.get(keyOf(p)); }); }
+  function recPut(p, blob) { return recOp("readwrite", function (s) { return s.put(blob, keyOf(p)); }); }
+  function recDel(p) { return recOp("readwrite", function (s) { return s.delete(keyOf(p)); }); }
+
+  /* robot voices */
+  function kindOf(v) { if (/^hi/i.test(v.lang)) return "devanagari"; return /^pa[-_]?in/i.test(v.lang) || /^pa$/i.test(v.lang) ? "gurmukhi" : "shahmukhi"; }
+  function textFor(v, p) { var k = kindOf(v); return k === "gurmukhi" ? p.gurmukhi : k === "devanagari" ? p.devanagari : p.script; }
+  function scoreOf(v) {
+    var s = /^pa[-_]pk/i.test(v.lang) ? 40 : /^ur[-_]pk/i.test(v.lang) ? 30 : /^ur/i.test(v.lang) ? 25 : /^hi/i.test(v.lang) ? 15 : 20;
+    if (/natural|neural|online|enhanced|premium/i.test(v.name)) s += 5;
+    return s;
+  }
+  function voiceId(v) { return v.name + "|" + v.lang; }
+  function usable(v, p) { return p ? !!textFor(v, p) : true; }
+  function chooseVoice(p) {
+    var list = state.voices.filter(function (v) { return usable(v, p); });
+    if (!list.length) return null;
+    if (state.voiceChoice !== "auto") {
+      var pick = list.filter(function (v) { return voiceId(v) === state.voiceChoice; })[0];
+      if (pick) return pick;
+    }
+    return list[0];
+  }
+  function refreshVoices() {
+    var note = $("voiceNote"), sel = $("voiceSel");
+    if (!("speechSynthesis" in window) || typeof SpeechSynthesisUtterance === "undefined") {
+      state.canSpeak = false; $("voiceLine").hidden = true;
+      note.textContent = "This browser cannot speak aloud. Recordings still play.";
+      updatePlayUi(); return;
+    }
+    state.canSpeak = true;
+    var all = window.speechSynthesis.getVoices() || [];
+    state.voices = all.filter(function (v) { return /^(ur|pa|hi)/i.test(v.lang); }).sort(function (a, b) { return scoreOf(b) - scoreOf(a); });
+    try { var saved = localStorage.getItem(VOICE_KEY); if (saved && state.voiceChoice === "auto") state.voiceChoice = saved; } catch (e) {}
+    if (state.voiceChoice !== "auto" && !state.voices.some(function (v) { return voiceId(v) === state.voiceChoice; })) state.voiceChoice = "auto";
+    sel.textContent = "";
+    var auto = document.createElement("option"); auto.value = "auto"; auto.textContent = "Best match"; sel.appendChild(auto);
+    state.voices.forEach(function (v) { var o = document.createElement("option"); o.value = voiceId(v); o.textContent = v.name + " (" + v.lang + ")"; sel.appendChild(o); });
+    sel.value = state.voiceChoice;
+    $("voiceLine").hidden = state.voices.length === 0;
+    refreshNote(all.length);
+    updatePlayUi();
+  }
+  function refreshNote(total) {
+    var note = $("voiceNote");
+    if (total === 0) { note.textContent = "This device reports no speech voices. Add a native recording to each phrase instead."; return; }
+    if (!state.voices.length) { note.textContent = "No Urdu, Punjabi or Hindi voice on this phone, so the robot reads the Roman spelling and will sound off. On iPhone, look in Settings > Accessibility > Spoken Content > Voices for Urdu, Punjabi or Hindi. No robot voice is a native Potwari speaker, so add recordings for the real accent."; return; }
+    var v = chooseVoice(state.current);
+    note.textContent = "Robot voice: " + (v ? v.name + " (" + v.lang + ")" : "none for this phrase") + ". It sounds like Urdu, Punjabi or Hindi, not Potwari. Add a native recording for the real accent.";
+  }
+  function stopAll() {
+    try { window.speechSynthesis.cancel(); } catch (e) {}
+    try { if (currentSrc) currentSrc.stop(); } catch (e) {}
+    try { if (currentAudio) currentAudio.pause(); } catch (e) {}
+    currentSrc = null; currentAudio = null;
+    document.querySelectorAll(".play.on").forEach(function (b) { b.classList.remove("on"); });
+  }
+  function playMsg(msg, isErr) { var s = $("playLabel"); s.textContent = msg; s.style.color = isErr ? "var(--danger)" : ""; }
+  function speak(p, rate, btn) {
+    if (!p) return;
+    if (!state.canSpeak) { playMsg("This browser cannot speak aloud. Add a native recording below.", true); return; }
+    stopAll();
+    var synth = window.speechSynthesis, v = chooseVoice(p), started = false;
+    var text = v ? textFor(v, p) : p.latin;
+    var u = new SpeechSynthesisUtterance(text);
+    if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = "en-US"; }
+    u.rate = rate;
+    var off = function () { if (btn) btn.classList.remove("on"); };
+    u.onstart = function () { started = true; if (btn) btn.classList.add("on"); updatePlayUi(); };
+    u.onend = off;
+    u.onerror = function (e) { off(); if (!started) playMsg("The voice could not start (" + ((e && e.error) || "unknown") + "). Check the volume and silent switch, or try another voice.", true); };
+    setTimeout(function () { try { synth.resume(); } catch (e) {} synth.speak(u); }, 80);
+    setTimeout(function () { if (!started && !synth.speaking) playMsg("Nothing played. Turn off the silent switch, raise the volume, or add a native recording.", true); }, 3000);
+  }
+  async function playRec(blob, rate, btn) {
+    stopAll();
+    var done = function () { if (btn) btn.classList.remove("on"); };
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) throw new Error("none");
+      audioCtx = audioCtx || new AC();
+      if (audioCtx.state === "suspended") await audioCtx.resume();
+      var buf = await audioCtx.decodeAudioData(await blob.arrayBuffer());
+      var src = audioCtx.createBufferSource();
+      src.buffer = buf; src.playbackRate.value = rate; src.connect(audioCtx.destination); src.onended = done;
+      currentSrc = src; if (btn) btn.classList.add("on"); src.start();
+    } catch (e1) {
+      try {
+        var a = new Audio(URL.createObjectURL(blob)); a.playbackRate = rate; a.onended = done; currentAudio = a;
+        if (btn) btn.classList.add("on"); await a.play();
+      } catch (e2) { done(); recMsg("This phone could not play that file. Try an .m4a or .mp3 recording.", true); }
+    }
+  }
+  async function playPhrase(p, rate, btn) {
+    if (!p) return;
+    var blob = null;
+    if (state.recOk) { try { blob = await recGet(p); } catch (e) { blob = null; } }
+    if (blob) playRec(blob, rate < 0.7 ? 0.7 : 1, btn); else speak(p, rate, btn);
+  }
+
+  /* rendering */
+  function recMsg(msg, isErr) { var s = $("recState"); s.textContent = msg; s.style.color = isErr ? "var(--danger)" : ""; }
+  function updatePlayUi() {
+    var ok = state.canSpeak || state.hasRec;
+    $("play").disabled = !ok; $("slow").disabled = !ok;
+    $("playLabel").textContent = state.hasRec ? "Native recording" : (state.canSpeak ? "Robot voice" : "No voice available");
+    $("playLabel").style.color = "";
+  }
+  function updateRecUi() {
+    $("recLine").hidden = !state.recOk;
+    $("recDel").hidden = !state.hasRec;
+    $("recAdd").textContent = state.hasRec ? "Replace recording" : "Add a native recording";
+    recMsg(state.hasRec ? "Saved on this phone. Play uses it." : "Attach a voice note from a native speaker. Play then uses it.", false);
+    updatePlayUi();
+  }
+  function show(p, label) {
+    state.current = p; state.hasRec = false;
+    $("tag").textContent = label;
+    $("rEn").textContent = p.en;
+    $("rScript").textContent = p.script || ""; $("rScript").hidden = !p.script;
+    $("rLatin").textContent = p.latin;
+    $("rPronBig").textContent = p.pron || ""; $("rPronBig").hidden = !p.pron;
+    $("rLit").textContent = p.literal || "";
+    $("dtLit").hidden = $("rLit").hidden = !p.literal;
+    $("facts").hidden = !p.literal;
+    $("rNote").textContent = p.note || ""; $("rNote").hidden = !p.note;
+    updateRecUi();
+    if (state.recOk) {
+      recGet(p).then(function (b) { if (state.current === p) { state.hasRec = !!b; updateRecUi(); } })
+        .catch(function () { state.recOk = false; updateRecUi(); });
+    }
+    refreshNote(null);
+  }
+  function rowFor(p, label, removable) {
+    var li = document.createElement("li");
+    var load = document.createElement("button"); load.type = "button"; load.className = "row-load";
+    var l = document.createElement("span"); l.className = "l"; l.textContent = p.latin;
+    var e = document.createElement("span"); e.className = "e"; e.textContent = p.en;
+    load.append(l, e);
+    load.addEventListener("click", function () { show(p, label); window.scrollTo({ top: 0, behavior: "smooth" }); });
+    var pl = document.createElement("button"); pl.type = "button"; pl.className = "row-btn"; pl.setAttribute("aria-label", "Play: " + p.en);
+    pl.innerHTML = PLAY_SVG;
+    pl.addEventListener("click", function () { playPhrase(p, 0.9, null); });
+    li.append(load, pl);
+    if (removable) {
+      var del = document.createElement("button"); del.type = "button"; del.className = "row-btn del"; del.setAttribute("aria-label", "Delete: " + p.en);
+      del.textContent = "Delete";
+      del.addEventListener("click", function () {
+        if (del.dataset.armed !== "1") { del.dataset.armed = "1"; del.textContent = "Sure?"; setTimeout(function () { del.dataset.armed = ""; del.textContent = "Delete"; }, 3000); return; }
+        state.mine = state.mine.filter(function (q) { return q !== p; });
+        saveMine(); recDel(p).catch(function () {});
+        if (state.current === p) show(STARTERS[0], "Starter phrase");
+        renderLists();
+      });
+      li.appendChild(del);
+    }
+    return li;
+  }
+  function renderLists() {
+    var s = $("starters"); s.textContent = "";
+    STARTERS.forEach(function (p) { s.appendChild(rowFor(p, "Starter phrase", false)); });
+    var m = $("mineList"); m.textContent = "";
+    if (!state.mine.length) {
+      var li = document.createElement("li"); var t = document.createElement("p"); t.className = "empty";
+      t.textContent = "Nothing yet. Fill in the form above and press Save phrase."; li.appendChild(t); m.appendChild(li);
+    }
+    state.mine.forEach(function (p) { m.appendChild(rowFor(p, "My phrase", true)); });
+  }
+
+  /* translate */
+  var API_KEY = "potwari-bol-api", OPT_KEY = "potwari-bol-opts";
+  function getApi() { try { return localStorage.getItem(API_KEY) || ""; } catch (e) { return ""; } }
+  function setStatus(msg, isErr) { var el = $("state"); el.textContent = msg || ""; el.className = "state" + (isErr ? " err" : ""); }
+  function setBusy(b) { state.busy = b; $("go").disabled = b; $("stop").hidden = !b; $("src").readOnly = b; }
+  async function translate() {
+    if (state.busy) return;
+    var text = $("src").value.trim();
+    if (!text) { setStatus("Type a sentence first.", true); $("src").focus(); return; }
+    var api = getApi();
+    if (!api) { setStatus("Set the translator address first, under Translator setup.", true); $("setup").open = true; $("apiUrl").focus(); return; }
+    var stopped = false, timedOut = false;
+    state.ctl = new AbortController();
+    state.ctl.signal.addEventListener("abort", function () { stopped = true; });
+    var timer = setTimeout(function () { timedOut = true; state.ctl.abort(); }, 60000);
+    setBusy(true); setStatus("Translating...", false);
+    try {
+      var r = await fetch(api, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: text, gender: state.gender, reg: state.reg }), signal: state.ctl.signal });
+      var data = null;
+      try { data = await r.json(); } catch (e) {}
+      if (!r.ok || !data || !data.latin) { throw { http: r.status }; }
+      var str = function (x) { return typeof x === "string" ? x.trim() : ""; };
+      var p = { en: text, latin: str(data.latin), script: str(data.shahmukhi), gurmukhi: str(data.gurmukhi),
+                devanagari: str(data.devanagari), pron: str(data.pronunciation), literal: str(data.literal), note: str(data.note) };
+      state.mine = [p].concat(state.mine.filter(function (q) { return keyOf(q) !== keyOf(p); })).slice(0, 60);
+      saveMine(); renderLists(); show(p, "Your translation"); setStatus("");
+      $("result").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    } catch (e) {
+      if (timedOut) setStatus("The translator took too long. Try again.", true);
+      else if (stopped) setStatus("");
+      else if (e && e.http === 403) setStatus("The translator refused this request. Check the address.", true);
+      else if (e && e.http) setStatus("The translator hit an error. Try again, or shorten the sentence.", true);
+      else setStatus("Could not reach the translator. Check the internet and the address under Translator setup.", true);
+    } finally { clearTimeout(timer); setBusy(false); state.ctl = null; }
+  }
+
+  /* wiring */
+  try { var o = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); if (o.gender === "m" || o.gender === "f") state.gender = o.gender; if (o.reg === "close" || o.reg === "respect") state.reg = o.reg; } catch (e) {}
+  document.querySelectorAll(".seg").forEach(function (seg) {
+    seg.querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.val === state[seg.dataset.group] ? "true" : "false"); });
+    seg.addEventListener("click", function (ev) {
+      var b = ev.target.closest("button"); if (!b) return;
+      seg.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+      state[seg.dataset.group] = b.dataset.val;
+      try { localStorage.setItem(OPT_KEY, JSON.stringify({ gender: state.gender, reg: state.reg })); } catch (e) {}
+    });
+  });
+  $("go").addEventListener("click", translate);
+  $("stop").addEventListener("click", function () { if (state.ctl) state.ctl.abort(); });
+  $("src").addEventListener("keydown", function (ev) { if ((ev.ctrlKey || ev.metaKey) && ev.key === "Enter") { ev.preventDefault(); translate(); } });
+  $("apiUrl").value = getApi();
+  if (!getApi()) $("setup").open = true;
+  $("apiSave").addEventListener("click", function () {
+    var v = $("apiUrl").value.trim(), st = $("apiState");
+    if (v && !/^https:\/\//i.test(v)) { st.textContent = "The address must start with https://"; st.className = "state err"; return; }
+    try { localStorage.setItem(API_KEY, v); } catch (e) {}
+    st.textContent = v ? "Saved." : "Cleared."; st.className = "state";
+    setTimeout(function () { st.textContent = ""; }, 2500);
+  });
+  $("play").addEventListener("click", function () { playPhrase(state.current, 0.9, $("play")); });
+  $("slow").addEventListener("click", function () { playPhrase(state.current, 0.5, $("play")); });
+  $("voiceSel").addEventListener("change", function () {
+    state.voiceChoice = $("voiceSel").value;
+    try { localStorage.setItem(VOICE_KEY, state.voiceChoice); } catch (e) {}
+    refreshNote(null); speak(state.current, 0.9, $("play"));
+  });
+  $("recAdd").addEventListener("click", function () { $("recFile").click(); });
+  $("recFile").addEventListener("change", async function () {
+    var f = $("recFile").files && $("recFile").files[0]; $("recFile").value = "";
+    if (!f || !state.current) return;
+    if (f.size > 8 * 1024 * 1024) { recMsg("That file is over 8 MB. Use a shorter clip.", true); return; }
+    if (f.type && f.type.indexOf("audio/") !== 0 && f.type.indexOf("video/") !== 0) { recMsg("Choose an audio file, such as a voice note.", true); return; }
+    try { await recPut(state.current, f); state.hasRec = true; updateRecUi(); } catch (e) { state.recOk = false; updateRecUi(); }
+  });
+  $("recDel").addEventListener("click", async function () {
+    if (!state.current) return;
+    try { await recDel(state.current); } catch (e) {}
+    state.hasRec = false; updateRecUi();
+  });
+  $("addForm").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var en = $("fEn").value.trim(), latin = $("fLatin").value.trim(), fs = $("formState");
+    if (!en || !latin) { fs.textContent = "Fill in the English and the Potwari in Roman letters."; fs.className = "state err"; return; }
+    var p = { en: en, latin: latin, script: $("fScript").value.trim(), gurmukhi: $("fGur").value.trim(), pron: $("fPron").value.trim(), literal: "", note: "" };
+    state.mine = [p].concat(state.mine.filter(function (q) { return keyOf(q) !== keyOf(p); }));
+    saveMine(); renderLists(); show(p, "My phrase");
+    ["fEn", "fLatin", "fScript", "fGur", "fPron"].forEach(function (id) { $(id).value = ""; });
+    fs.textContent = "Saved."; fs.className = "state";
+    setTimeout(function () { fs.textContent = ""; }, 2500);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  state.mine = loadMine();
+  refreshVoices(); renderLists(); show(STARTERS[0], "Starter phrase");
+  if ("speechSynthesis" in window && window.speechSynthesis.addEventListener) {
+    window.speechSynthesis.addEventListener("voiceschanged", function () { refreshVoices(); });
+  }
+  if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); }); }
+})();
+</script>
+</body>
+</html>
