@@ -248,7 +248,7 @@ details .field { margin-top: 8px; }
   ];
 
   var SAVE_KEY = "potwari-bol-mine", VOICE_KEY = "potwari-bol-voice";
-  var state = { gender: "f", reg: "respect", busy: false, ctl: null, current: null, mine: [], canSpeak: false, voices: [], voiceChoice: "auto", hasRec: false, recOk: true };
+  var state = { gender: "f", reg: "respect", busy: false, ctl: null, current: null, mine: [], canSpeak: false, voices: [], voiceChoice: "auto", hasRec: false, recOk: true, recKeys: {} };
   var audioCtx = null, currentSrc = null, currentAudio = null;
 
   function validPhrase(p) { return p && typeof p.en === "string" && typeof p.latin === "string"; }
@@ -283,6 +283,15 @@ details .field { margin-top: 8px; }
   function recGet(p) { return recOp("readonly", function (s) { return s.get(keyOf(p)); }); }
   function recPut(p, blob) { return recOp("readwrite", function (s) { return s.put(blob, keyOf(p)); }); }
   function recDel(p) { return recOp("readwrite", function (s) { return s.delete(keyOf(p)); }); }
+  function loadRecKeys() {
+    return openDb().then(function (db) {
+      return new Promise(function (res) {
+        var r = db.transaction(STORE, "readonly").objectStore(STORE).getAllKeys();
+        r.onsuccess = function () { res(r.result || []); };
+        r.onerror = function () { res([]); };
+      });
+    }).then(function (ks) { ks.forEach(function (k) { state.recKeys[k] = 1; }); }).catch(function () {});
+  }
 
   /* robot voices */
   function kindOf(v) { if (/^hi/i.test(v.lang)) return "devanagari"; return /^pa[-_]?in/i.test(v.lang) || /^pa$/i.test(v.lang) ? "gurmukhi" : "shahmukhi"; }
@@ -345,13 +354,14 @@ details .field { margin-top: 8px; }
     var synth = window.speechSynthesis, v = chooseVoice(p), started = false;
     var text = v ? textFor(v, p) : p.latin;
     var u = new SpeechSynthesisUtterance(text);
-    if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = "en-US"; }
+    if (v) { try { u.voice = v; } catch (e) {} u.lang = v.lang; } else { u.lang = "en-US"; }
     u.rate = rate;
     var off = function () { if (btn) btn.classList.remove("on"); };
     u.onstart = function () { started = true; if (btn) btn.classList.add("on"); updatePlayUi(); };
     u.onend = off;
     u.onerror = function (e) { off(); if (!started) playMsg("The voice could not start (" + ((e && e.error) || "unknown") + "). Check the volume and silent switch, or try another voice.", true); };
-    setTimeout(function () { try { synth.resume(); } catch (e) {} synth.speak(u); }, 80);
+    try { synth.resume(); } catch (e) {}
+    synth.speak(u);
     setTimeout(function () { if (!started && !synth.speaking) playMsg("Nothing played. Turn off the silent switch, raise the volume, or add a native recording.", true); }, 3000);
   }
   async function playRec(blob, rate, btn) {
@@ -373,11 +383,22 @@ details .field { margin-top: 8px; }
       } catch (e2) { done(); recMsg("This phone could not play that file. Try an .m4a or .mp3 recording.", true); }
     }
   }
-  async function playPhrase(p, rate, btn) {
+  function unlockAudio() {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) { audioCtx = audioCtx || new AC(); if (audioCtx.state === "suspended") audioCtx.resume(); }
+    } catch (e) {}
+  }
+  function playPhrase(p, rate, btn) {
     if (!p) return;
-    var blob = null;
-    if (state.recOk) { try { blob = await recGet(p); } catch (e) { blob = null; } }
-    if (blob) playRec(blob, rate < 0.7 ? 0.7 : 1, btn); else speak(p, rate, btn);
+    unlockAudio();
+    if (state.recOk && state.recKeys[keyOf(p)]) {
+      recGet(p).then(function (blob) {
+        if (blob) playRec(blob, rate < 0.7 ? 0.7 : 1, btn); else speak(p, rate, btn);
+      }).catch(function () { speak(p, rate, btn); });
+    } else {
+      speak(p, rate, btn);
+    }
   }
 
   /* rendering */
@@ -430,7 +451,7 @@ details .field { margin-top: 8px; }
       del.addEventListener("click", function () {
         if (del.dataset.armed !== "1") { del.dataset.armed = "1"; del.textContent = "Sure?"; setTimeout(function () { del.dataset.armed = ""; del.textContent = "Delete"; }, 3000); return; }
         state.mine = state.mine.filter(function (q) { return q !== p; });
-        saveMine(); recDel(p).catch(function () {});
+        saveMine(); delete state.recKeys[keyOf(p)]; recDel(p).catch(function () {});
         if (state.current === p) show(STARTERS[0], "Starter phrase");
         renderLists();
       });
@@ -522,11 +543,12 @@ details .field { margin-top: 8px; }
     if (!f || !state.current) return;
     if (f.size > 8 * 1024 * 1024) { recMsg("That file is over 8 MB. Use a shorter clip.", true); return; }
     if (f.type && f.type.indexOf("audio/") !== 0 && f.type.indexOf("video/") !== 0) { recMsg("Choose an audio file, such as a voice note.", true); return; }
-    try { await recPut(state.current, f); state.hasRec = true; updateRecUi(); } catch (e) { state.recOk = false; updateRecUi(); }
+    try { await recPut(state.current, f); state.recKeys[keyOf(state.current)] = 1; state.hasRec = true; updateRecUi(); } catch (e) { state.recOk = false; updateRecUi(); }
   });
   $("recDel").addEventListener("click", async function () {
     if (!state.current) return;
     try { await recDel(state.current); } catch (e) {}
+    delete state.recKeys[keyOf(state.current)];
     state.hasRec = false; updateRecUi();
   });
   $("addForm").addEventListener("submit", function (ev) {
@@ -543,11 +565,16 @@ details .field { margin-top: 8px; }
   });
 
   state.mine = loadMine();
+  loadRecKeys();
   refreshVoices(); renderLists(); show(STARTERS[0], "Starter phrase");
   if ("speechSynthesis" in window && window.speechSynthesis.addEventListener) {
     window.speechSynthesis.addEventListener("voiceschanged", function () { refreshVoices(); });
   }
-  if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); }); }
+  if ("serviceWorker" in navigator) {
+    var hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener("controllerchange", function () { if (hadController) location.reload(); });
+    window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").then(function (r) { try { r.update(); } catch (e) {} }).catch(function () {}); });
+  }
 })();
 </script>
 </body>
