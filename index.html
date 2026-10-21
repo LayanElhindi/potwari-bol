@@ -249,7 +249,7 @@ details .field { margin-top: 8px; }
 
   var SAVE_KEY = "potwari-bol-mine", VOICE_KEY = "potwari-bol-voice";
   var state = { gender: "f", reg: "respect", busy: false, ctl: null, current: null, mine: [], canSpeak: false, voices: [], voiceChoice: "auto", hasRec: false, recOk: true, recKeys: {} };
-  var audioCtx = null, currentSrc = null, currentAudio = null;
+  var audioCtx = null, currentSrc = null, currentAudio = null, lastUtt = null;
 
   function validPhrase(p) { return p && typeof p.en === "string" && typeof p.latin === "string"; }
   function loadMine() {
@@ -312,48 +312,82 @@ details .field { margin-top: 8px; }
     }
     return list[0];
   }
-  function refreshVoices() {
-    var note = $("voiceNote"), sel = $("voiceSel");
-    if (!("speechSynthesis" in window) || typeof SpeechSynthesisUtterance === "undefined") {
-      state.canSpeak = false; $("voiceLine").hidden = true;
-      note.textContent = "This browser cannot speak aloud. Recordings still play.";
-      updatePlayUi(); return;
-    }
-    state.canSpeak = true;
-    var all = window.speechSynthesis.getVoices() || [];
-    state.voices = all.filter(function (v) { return /^(ur|pa|hi)/i.test(v.lang); }).sort(function (a, b) { return scoreOf(b) - scoreOf(a); });
-    try { var saved = localStorage.getItem(VOICE_KEY); if (saved && state.voiceChoice === "auto") state.voiceChoice = saved; } catch (e) {}
-    if (state.voiceChoice !== "auto" && !state.voices.some(function (v) { return voiceId(v) === state.voiceChoice; })) state.voiceChoice = "auto";
-    sel.textContent = "";
-    var auto = document.createElement("option"); auto.value = "auto"; auto.textContent = "Best match"; sel.appendChild(auto);
-    state.voices.forEach(function (v) { var o = document.createElement("option"); o.value = voiceId(v); o.textContent = v.name + " (" + v.lang + ")"; sel.appendChild(o); });
+  function buildSelect() {
+    var sel = $("voiceSel"); sel.textContent = "";
+    var add = function (val, label) { var o = document.createElement("option"); o.value = val; o.textContent = label; sel.appendChild(o); };
+    add("auto", "Best match");
+    state.voices.forEach(function (v) { add(voiceId(v), v.name + " (" + v.lang + ")"); });
+    add("online", "Online voice (needs internet)");
     sel.value = state.voiceChoice;
-    $("voiceLine").hidden = state.voices.length === 0;
-    refreshNote(all.length);
+    $("voiceLine").hidden = false;
+  }
+  function useOnline() {
+    if (state.voiceChoice === "online") return true;
+    return state.voiceChoice === "auto" && (!state.canSpeak || state.voices.length === 0);
+  }
+  function refreshVoices() {
+    try { var saved = localStorage.getItem(VOICE_KEY); if (saved && state.voiceChoice === "auto") state.voiceChoice = saved; } catch (e) {}
+    var total = 0;
+    if (!("speechSynthesis" in window) || typeof SpeechSynthesisUtterance === "undefined") {
+      state.canSpeak = false; state.voices = [];
+    } else {
+      state.canSpeak = true;
+      var all = window.speechSynthesis.getVoices() || [];
+      total = all.length;
+      state.voices = all.filter(function (v) { return /^(ur|pa|hi)/i.test(v.lang); }).sort(function (a, b) { return scoreOf(b) - scoreOf(a); });
+    }
+    if (state.voiceChoice !== "auto" && state.voiceChoice !== "online" && !state.voices.some(function (v) { return voiceId(v) === state.voiceChoice; })) state.voiceChoice = "auto";
+    buildSelect();
+    refreshNote(total);
     updatePlayUi();
   }
-  function refreshNote(total) {
+  function refreshNote() {
     var note = $("voiceNote");
-    if (total === 0) { note.textContent = "This device reports no speech voices. Add a native recording to each phrase instead."; return; }
-    if (!state.voices.length) { note.textContent = "No Urdu, Punjabi or Hindi voice on this phone, so the robot reads the Roman spelling and will sound off. On iPhone, look in Settings > Accessibility > Spoken Content > Voices for Urdu, Punjabi or Hindi. No robot voice is a native Potwari speaker, so add recordings for the real accent."; return; }
+    if (useOnline()) { note.textContent = "Using the online voice, which needs internet. It reads Urdu, so it sounds close to Potwari but not the same. For the real accent, add a native recording."; return; }
     var v = chooseVoice(state.current);
-    note.textContent = "Robot voice: " + (v ? v.name + " (" + v.lang + ")" : "none for this phrase") + ". It sounds like Urdu, Punjabi or Hindi, not Potwari. Add a native recording for the real accent.";
+    note.textContent = "Robot voice: " + (v ? v.name + " (" + v.lang + ")" : "none for this phrase") + ". It sounds like Urdu, Punjabi or Hindi, not Potwari. If nothing plays, choose Online voice in the list above.";
   }
   function stopAll() {
-    try { window.speechSynthesis.cancel(); } catch (e) {}
+    try { var ss = window.speechSynthesis; if (ss && (ss.speaking || ss.pending)) ss.cancel(); } catch (e) {}
     try { if (currentSrc) currentSrc.stop(); } catch (e) {}
     try { if (currentAudio) currentAudio.pause(); } catch (e) {}
     currentSrc = null; currentAudio = null;
     document.querySelectorAll(".play.on").forEach(function (b) { b.classList.remove("on"); });
   }
   function playMsg(msg, isErr) { var s = $("playLabel"); s.textContent = msg; s.style.color = isErr ? "var(--danger)" : ""; }
+  function speakOnline(p, rate, btn) {
+    var lang, text;
+    if (p.script) { lang = "ur"; text = p.script; }
+    else if (p.devanagari) { lang = "hi"; text = p.devanagari; }
+    else if (p.gurmukhi) { lang = "pa"; text = p.gurmukhi; }
+    else { playMsg("This phrase has no Urdu script, so the online voice cannot read it. Add Urdu script to the phrase.", true); return; }
+    stopAll();
+    var parts = [], cur = "";
+    (text.match(/[^\u060C,.\u061F?!\u06D4;]+[\u060C,.\u061F?!\u06D4;]?/g) || [text]).forEach(function (t) {
+      if ((cur + t).length > 180) { if (cur) parts.push(cur); cur = t; } else { cur += t; }
+    });
+    if (cur) parts.push(cur);
+    var off = function () { if (btn) btn.classList.remove("on"); };
+    var fail = function () { off(); playMsg("The online voice could not play. Check the internet, or add a native recording.", true); };
+    var url = function (t) { return "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=" + lang + "&q=" + encodeURIComponent(t); };
+    var i = 0, a = new Audio();
+    a.defaultPlaybackRate = a.playbackRate = rate < 0.7 ? 0.75 : 1;
+    a.onended = function () { i++; if (i < parts.length) { a.src = url(parts[i]); a.play().catch(fail); } else off(); };
+    a.onerror = fail;
+    currentAudio = a;
+    if (btn) btn.classList.add("on");
+    a.src = url(parts[0]);
+    a.play().catch(fail);
+  }
   function speak(p, rate, btn) {
     if (!p) return;
+    if (useOnline()) { speakOnline(p, rate, btn); return; }
     if (!state.canSpeak) { playMsg("This browser cannot speak aloud. Add a native recording below.", true); return; }
     stopAll();
     var synth = window.speechSynthesis, v = chooseVoice(p), started = false;
     var text = v ? textFor(v, p) : p.latin;
     var u = new SpeechSynthesisUtterance(text);
+    lastUtt = u;
     if (v) { try { u.voice = v; } catch (e) {} u.lang = v.lang; } else { u.lang = "en-US"; }
     u.rate = rate;
     var off = function () { if (btn) btn.classList.remove("on"); };
@@ -362,7 +396,7 @@ details .field { margin-top: 8px; }
     u.onerror = function (e) { off(); if (!started) playMsg("The voice could not start (" + ((e && e.error) || "unknown") + "). Check the volume and silent switch, or try another voice.", true); };
     try { synth.resume(); } catch (e) {}
     synth.speak(u);
-    setTimeout(function () { if (!started && !synth.speaking) playMsg("Nothing played. Turn off the silent switch, raise the volume, or add a native recording.", true); }, 3000);
+    setTimeout(function () { if (!started && !synth.speaking) playMsg("Nothing played. Choose Online voice in the voice list below, or add a native recording.", true); }, 3000);
   }
   async function playRec(blob, rate, btn) {
     stopAll();
@@ -404,9 +438,9 @@ details .field { margin-top: 8px; }
   /* rendering */
   function recMsg(msg, isErr) { var s = $("recState"); s.textContent = msg; s.style.color = isErr ? "var(--danger)" : ""; }
   function updatePlayUi() {
-    var ok = state.canSpeak || state.hasRec;
+    var ok = state.canSpeak || state.hasRec || navigator.onLine !== false;
     $("play").disabled = !ok; $("slow").disabled = !ok;
-    $("playLabel").textContent = state.hasRec ? "Native recording" : (state.canSpeak ? "Robot voice" : "No voice available");
+    $("playLabel").textContent = state.hasRec ? "Native recording" : (useOnline() ? "Online voice" : (state.canSpeak ? "Robot voice" : "No voice available"));
     $("playLabel").style.color = "";
   }
   function updateRecUi() {
@@ -535,7 +569,7 @@ details .field { margin-top: 8px; }
   $("voiceSel").addEventListener("change", function () {
     state.voiceChoice = $("voiceSel").value;
     try { localStorage.setItem(VOICE_KEY, state.voiceChoice); } catch (e) {}
-    refreshNote(null); speak(state.current, 0.9, $("play"));
+    refreshNote(null); updatePlayUi(); speak(state.current, 0.9, $("play"));
   });
   $("recAdd").addEventListener("click", function () { $("recFile").click(); });
   $("recFile").addEventListener("change", async function () {
